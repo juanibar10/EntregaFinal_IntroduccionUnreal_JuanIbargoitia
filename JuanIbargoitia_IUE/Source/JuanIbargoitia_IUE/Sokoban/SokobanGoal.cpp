@@ -1,11 +1,9 @@
 ﻿#include "SokobanGoal.h"
-#include "Components/StaticMeshComponent.h"
 
-ASokobanGoal::ASokobanGoal()
+AJuanIbargoitia_IUESokobanGoal::AJuanIbargoitia_IUESokobanGoal()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	SetRootComponent(Mesh);
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
 }

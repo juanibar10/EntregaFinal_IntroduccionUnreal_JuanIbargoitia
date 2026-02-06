@@ -27,6 +27,7 @@ public class JuanIbargoitia_IUE : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"JuanIbargoitia_IUE",
+			"JuanIbargoitia_IUE/Sokoban",
 			"JuanIbargoitia_IUE/Variant_Strategy",
 			"JuanIbargoitia_IUE/Variant_Strategy/UI",
 			"JuanIbargoitia_IUE/Variant_TwinStick",

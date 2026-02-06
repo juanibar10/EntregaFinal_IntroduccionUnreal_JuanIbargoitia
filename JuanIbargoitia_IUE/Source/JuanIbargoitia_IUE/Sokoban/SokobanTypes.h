@@ -1,30 +1,46 @@
-﻿// Minimal Sokoban grid helper types
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "SokobanTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class ESokobanDir : uint8
+{
+	Up,
+	Down,
+	Left,
+	Right
+};
+
 USTRUCT(BlueprintType)
-struct FSokobanGridPos
+struct FSokobanStepResult
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sokoban")
-	int32 X = 0;
+	UPROPERTY(BlueprintReadOnly)
+	bool bSuccess = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sokoban")
-	int32 Y = 0;
+	UPROPERTY(BlueprintReadOnly)
+	bool bPushedCrate = false;
 
-	FSokobanGridPos() = default;
-	FSokobanGridPos(int32 InX, int32 InY) : X(InX), Y(InY) {}
+	UPROPERTY(BlueprintReadOnly)
+	FIntPoint NewPlayerCell = FIntPoint::ZeroValue;
 
-	FORCEINLINE bool operator==(const FSokobanGridPos& Other) const { return X == Other.X && Y == Other.Y; }
-	FORCEINLINE bool operator!=(const FSokobanGridPos& Other) const { return !(*this == Other); }
+	UPROPERTY(BlueprintReadOnly)
+	FIntPoint CrateFromCell = FIntPoint::ZeroValue;
 
-	FORCEINLINE FSokobanGridPos operator+(const FSokobanGridPos& Other) const { return FSokobanGridPos(X + Other.X, Y + Other.Y); }
+	UPROPERTY(BlueprintReadOnly)
+	FIntPoint CrateToCell = FIntPoint::ZeroValue;
 };
 
-FORCEINLINE uint32 GetTypeHash(const FSokobanGridPos& P)
+inline FIntPoint SokobanDirToDelta(ESokobanDir Dir)
 {
-	return HashCombine(::GetTypeHash(P.X), ::GetTypeHash(P.Y));
+	switch (Dir)
+	{
+	case ESokobanDir::Up: return FIntPoint(1, 0);
+	case ESokobanDir::Down: return FIntPoint(-1, 0);
+	case ESokobanDir::Left: return FIntPoint(0, -1);
+	case ESokobanDir::Right: return FIntPoint(0, 1);
+	default: return FIntPoint::ZeroValue;
+	}
 }

@@ -2,20 +2,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SokobanTypes.h"
+#include "Components/SceneComponent.h"
 #include "SokobanGoal.generated.h"
 
 UCLASS()
-class JUANIBARGOITIA_IUE_API ASokobanGoal : public AActor
+class AJuanIbargoitia_IUESokobanGoal : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASokobanGoal();
+	AJuanIbargoitia_IUESokobanGoal();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sokoban")
-	FSokobanGridPos GridPos;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<class UStaticMeshComponent> Mesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sokoban")
+	TObjectPtr<USceneComponent> Root;
 };

@@ -1,23 +1,26 @@
 ﻿#include "SokobanPawn.h"
 
-#include "SokobanCrate.h"
-#include "SokobanGameMode.h"
-
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
-ASokobanPawn::ASokobanPawn()
+#include "SokobanBoardManager.h"
+#include "SokobanCrate.h"
+#include "SokobanGameState.h"
+
+AJuanIbargoitia_IUESokobanPawn::AJuanIbargoitia_IUESokobanPawn()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 
 	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
 	SetRootComponent(Capsule);
-	Capsule->InitCapsuleSize(34.0f, 88.0f);
-	Capsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+	Capsule->InitCapsuleSize(42.f, 96.f);
+	Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Capsule->SetCollisionObjectType(ECC_Pawn);
+	Capsule->SetCollisionResponseToAllChannels(ECR_Block);
 
 	Visual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Visual"));
 	Visual->SetupAttachment(Capsule);
@@ -26,8 +29,8 @@ ASokobanPawn::ASokobanPawn()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(Capsule);
 	CameraBoom->SetUsingAbsoluteRotation(true);
-	CameraBoom->TargetArmLength = 800.0f;
-	CameraBoom->SetRelativeRotation(FRotator(-60.0f, 0.0f, 0.0f));
+	CameraBoom->TargetArmLength = 900.f;
+	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
 	CameraBoom->bDoCollisionTest = false;
 
 	TopDownCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
@@ -37,92 +40,114 @@ ASokobanPawn::ASokobanPawn()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-void ASokobanPawn::BeginPlay()
+void AJuanIbargoitia_IUESokobanPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Snap to grid on start
-	SetActorLocation(GridToWorld(GridPos));
-}
-
-void ASokobanPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	check(PlayerInputComponent);
-
-	PlayerInputComponent->BindAction("Sokoban_Up", IE_Pressed, this, &ASokobanPawn::MoveUp);
-	PlayerInputComponent->BindAction("Sokoban_Down", IE_Pressed, this, &ASokobanPawn::MoveDown);
-	PlayerInputComponent->BindAction("Sokoban_Left", IE_Pressed, this, &ASokobanPawn::MoveLeft);
-	PlayerInputComponent->BindAction("Sokoban_Right", IE_Pressed, this, &ASokobanPawn::MoveRight);
-}
-
-void ASokobanPawn::MoveUp() { TryMove(FSokobanGridPos(0, 1)); }
-void ASokobanPawn::MoveDown() { TryMove(FSokobanGridPos(0, -1)); }
-void ASokobanPawn::MoveLeft() { TryMove(FSokobanGridPos(-1, 0)); }
-void ASokobanPawn::MoveRight() { TryMove(FSokobanGridPos(1, 0)); }
-
-bool ASokobanPawn::TryMove(const FSokobanGridPos& Dir)
-{
-	ASokobanGameMode* GM = GetSokobanGM();
-	if (!GM)
+	// find board manager
+	for (TActorIterator<AJuanIbargoitia_IUESokobanBoardManager> It(GetWorld()); It; ++It)
 	{
-		return false;
+		Board = *It;
+		break;
 	}
 
-	const FSokobanGridPos Target = GridPos + Dir;
-	if (GM->IsBlockedCell(Target))
+	if (Board.IsValid())
 	{
-		return false;
+		GridCell = Board->WorldToCell(GetActorLocation());
+		SetActorLocation(Board->CellToWorld(GridCell));
+		Board->RegisterPlayerCell(GridCell);
 	}
 
-	AActor* Occupant = GM->GetOccupantAt(Target);
-	if (Occupant)
+	CachedGS = GetWorld() ? GetWorld()->GetGameState<AJuanIbargoitia_IUESokobanGameState>() : nullptr;
+}
+
+void AJuanIbargoitia_IUESokobanPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bMoving)
 	{
-		// Only crates are pushable.
-		if (!GM->TryMoveCrate(Target, Dir))
+		return;
+	}
+
+	MoveElapsed += DeltaSeconds;
+	const float Alpha = FMath::Clamp(MoveElapsed / FMath::Max(0.01f, StepDuration), 0.f, 1.f);
+	const float Smoothed = FMath::InterpEaseInOut(0.f, 1.f, Alpha, 2.f);
+	SetActorLocation(FMath::Lerp(MoveFrom, MoveTo, Smoothed));
+
+	if (MovingCrate.IsValid())
+	{
+		MovingCrate->SetActorLocation(FMath::Lerp(CrateFrom, CrateTo, Smoothed));
+	}
+
+	if (Alpha >= 1.f)
+	{
+		SetActorLocation(MoveTo);
+		if (MovingCrate.IsValid())
 		{
-			return false;
+			MovingCrate->SetActorLocation(CrateTo);
+		}
+
+		bMoving = false;
+		MovingCrate = nullptr;
+
+		if (Board.IsValid())
+		{
+			Board->RecomputeCratesOnGoals();
+		}
+	}
+}
+
+void AJuanIbargoitia_IUESokobanPawn::StartStep(const FVector& From, const FVector& To)
+{
+	bMoving = true;
+	MoveElapsed = 0.f;
+	MoveFrom = From;
+	MoveTo = To;
+	SetActorLocation(From);
+}
+
+bool AJuanIbargoitia_IUESokobanPawn::RequestStep(ESokobanDir Dir)
+{
+	if (bMoving || !Board.IsValid())
+	{
+		return false;
+	}
+
+	const FSokobanStepResult Step = Board->TryStep(GridCell, Dir);
+	if (!Step.bSuccess)
+	{
+		return false;
+	}
+
+	// update occupancy for player
+	Board->UnregisterPlayerCell(GridCell);
+	GridCell = Step.NewPlayerCell;
+	Board->RegisterPlayerCell(GridCell);
+
+	if (!CachedGS.IsValid())
+	{
+		CachedGS = GetWorld() ? GetWorld()->GetGameState<AJuanIbargoitia_IUESokobanGameState>() : nullptr;
+	}
+	if (CachedGS.IsValid())
+	{
+		CachedGS->IncrementMoves();
+	}
+
+	// Setup crate movement visuals if pushed
+	MovingCrate = nullptr;
+	if (Step.bPushedCrate)
+	{
+		if (AJuanIbargoitia_IUESokobanCrate* Crate = Board->FindCrateAtCell(Step.CrateToCell))
+		{
+			MovingCrate = Crate;
+			CrateFrom = Board->CellToWorld(Step.CrateFromCell);
+			CrateTo = Board->CellToWorld(Step.CrateToCell);
 		}
 	}
 
-	GridPos = Target;
-	SetActorLocation(GridToWorld(GridPos));
-	GM->NotifyPlayerAction();
+	const FVector From = GetActorLocation();
+	const FVector To = Board->CellToWorld(GridCell);
+	StartStep(From, To);
 	return true;
-}
-
-float ASokobanPawn::GetTileSize() const
-{
-	if (TileSizeOverride > 0.0f)
-	{
-		return TileSizeOverride;
-	}
-	if (const ASokobanGameMode* GM = GetSokobanGM())
-	{
-		return GM->TileSize;
-	}
-	return 200.0f;
-}
-
-FVector ASokobanPawn::GetGridOrigin() const
-{
-	if (!GridOriginOverride.IsNearlyZero())
-	{
-		return GridOriginOverride;
-	}
-	if (const ASokobanGameMode* GM = GetSokobanGM())
-	{
-		return GM->GridOrigin;
-	}
-	return FVector::ZeroVector;
-}
-
-FVector ASokobanPawn::GridToWorld(const FSokobanGridPos& P) const
-{
-	return GetGridOrigin() + FVector(P.X * GetTileSize(), P.Y * GetTileSize(), 0.0f);
-}
-
-ASokobanGameMode* ASokobanPawn::GetSokobanGM() const
-{
-	return Cast<ASokobanGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 }

@@ -2,15 +2,36 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "InputActionValue.h"
+#include "SokobanTypes.h"
 #include "SokobanPlayerController.generated.h"
 
+class UInputMappingContext;
+class UInputAction;
+class AJuanIbargoitia_IUESokobanPawn;
+
 UCLASS()
-class JUANIBARGOITIA_IUE_API ASokobanPlayerController : public APlayerController
+class AJuanIbargoitia_IUESokobanPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	ASokobanPlayerController();
+	AJuanIbargoitia_IUESokobanPlayerController();
 
-	virtual void BeginPlay() override;
+protected:
+	virtual void SetupInputComponent() override;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> MappingContext;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> MoveAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> RestartAction;
+
+	void OnMoveStarted(const FInputActionValue& Value);
+	void OnRestartStarted(const FInputActionValue& Value);
+
+	ESokobanDir AxisToDir(const FVector2D& Axis) const;
 };

@@ -5,56 +5,60 @@
 #include "SokobanTypes.h"
 #include "SokobanPawn.generated.h"
 
-class USpringArmComponent;
-class UCameraComponent;
 class UCapsuleComponent;
 class UStaticMeshComponent;
+class UCameraComponent;
+class USpringArmComponent;
+class AJuanIbargoitia_IUESokobanBoardManager;
+class AJuanIbargoitia_IUESokobanCrate;
+class AJuanIbargoitia_IUESokobanGameState;
 
 UCLASS()
-class JUANIBARGOITIA_IUE_API ASokobanPawn : public APawn
+class AJuanIbargoitia_IUESokobanPawn : public APawn
 {
 	GENERATED_BODY()
 
 public:
-	ASokobanPawn();
+	AJuanIbargoitia_IUESokobanPawn();
 
 	virtual void BeginPlay() override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sokoban")
-	FSokobanGridPos GridPos;
+	bool IsMoving() const { return bMoving; }
+	FIntPoint GetGridCell() const { return GridCell; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sokoban")
-	float TileSizeOverride = 0.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sokoban")
-	FVector GridOriginOverride = FVector::ZeroVector;
+	bool RequestStep(ESokobanDir Dir);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sokoban")
 	TObjectPtr<UCapsuleComponent> Capsule;
 
-	// Visible capsule mesh
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sokoban")
 	TObjectPtr<UStaticMeshComponent> Visual;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sokoban")
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sokoban")
 	TObjectPtr<UCameraComponent> TopDownCamera;
 
-protected:
-	void MoveUp();
-	void MoveDown();
-	void MoveLeft();
-	void MoveRight();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sokoban")
+	float StepDuration = 0.12f;
 
-	bool TryMove(const FSokobanGridPos& Dir);
-	float GetTileSize() const;
-	FVector GetGridOrigin() const;
+private:
+	TWeakObjectPtr<AJuanIbargoitia_IUESokobanBoardManager> Board;
+	TWeakObjectPtr<AJuanIbargoitia_IUESokobanGameState> CachedGS;
 
-	FVector GridToWorld(const FSokobanGridPos& P) const;
+	FIntPoint GridCell = FIntPoint::ZeroValue;
 
-	class ASokobanGameMode* GetSokobanGM() const;
+	bool bMoving = false;
+	float MoveElapsed = 0.f;
+	FVector MoveFrom = FVector::ZeroVector;
+	FVector MoveTo = FVector::ZeroVector;
+
+	TWeakObjectPtr<AJuanIbargoitia_IUESokobanCrate> MovingCrate;
+	FVector CrateFrom = FVector::ZeroVector;
+	FVector CrateTo = FVector::ZeroVector;
+
+	void StartStep(const FVector& From, const FVector& To);
 };
