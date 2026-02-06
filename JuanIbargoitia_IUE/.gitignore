@@ -1,0 +1,45 @@
+####################################
+# Unreal Engine (UE4 / UE5)
+####################################
+
+# Build artifacts
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Plugin build artifacts
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+####################################
+# IDEs / Editors
+####################################
+
+# Visual Studio
+.vs/
+*.VC.db
+*.VC.opendb
+*.sln
+*.suo
+*.user
+.vsconfig
+
+# JetBrains Rider / CLion
+.idea/
+*.iws
+
+####################################
+# OS noise
+####################################
+
+.DS_Store
+Thumbs.db
+
+####################################
+# Optional (safe to ignore)
+####################################
+
+# Generated lighting data (can be rebuilt)
+*_BuiltData.uasset
