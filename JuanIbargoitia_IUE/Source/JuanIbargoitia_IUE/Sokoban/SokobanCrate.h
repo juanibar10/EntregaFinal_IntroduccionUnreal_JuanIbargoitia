@@ -21,8 +21,6 @@ public:
 	void StartMoveInterp(const FVector& From, const FVector& To, float Duration);
 	bool IsMoving() const { return bMoving; }
 
-protected:
-	virtual void Tick(float DeltaSeconds) override;
 
 private:
 	bool bMoving = false;

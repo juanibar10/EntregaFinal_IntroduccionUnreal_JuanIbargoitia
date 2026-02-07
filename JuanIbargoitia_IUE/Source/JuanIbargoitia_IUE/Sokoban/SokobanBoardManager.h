@@ -18,10 +18,15 @@ public:
 	AJuanIbargoitia_IUESokobanBoardManager();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sokoban")
-	float TileSize = 200.f;
+	float TileSize = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sokoban")
+	bool bSnapActorsToGridOnBeginPlay = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sokoban")
 	bool bDrawDebug = true;
+
+	bool bDebugDrawAtCellCorners = true;
 
 	UFUNCTION(BlueprintPure, Category = "Sokoban")
 	FVector CellToWorld(const FIntPoint& Cell) const;

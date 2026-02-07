@@ -33,5 +33,5 @@ protected:
 	void OnMoveStarted(const FInputActionValue& Value);
 	void OnRestartStarted(const FInputActionValue& Value);
 
-	ESokobanDir AxisToDir(const FVector2D& Axis) const;
+	static ESokobanDir AxisToDir(const FVector2D& Axis);
 };

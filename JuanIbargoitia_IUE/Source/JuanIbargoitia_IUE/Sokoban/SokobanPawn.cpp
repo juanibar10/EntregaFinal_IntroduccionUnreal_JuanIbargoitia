@@ -31,7 +31,9 @@ AJuanIbargoitia_IUESokobanPawn::AJuanIbargoitia_IUESokobanPawn()
 	CameraBoom->SetUsingAbsoluteRotation(true);
 	CameraBoom->TargetArmLength = 900.f;
 	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
+
 	CameraBoom->bDoCollisionTest = false;
+	CameraBoom->ProbeSize = 0.f;
 
 	TopDownCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
 	TopDownCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -44,8 +46,7 @@ void AJuanIbargoitia_IUESokobanPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// find board manager
-	for (TActorIterator<AJuanIbargoitia_IUESokobanBoardManager> It(GetWorld()); It; ++It)
+	for (TActorIterator<AJuanIbargoitia_IUESokobanBoardManager> It(GetWorld()); It;)
 	{
 		Board = *It;
 		break;
@@ -120,7 +121,6 @@ bool AJuanIbargoitia_IUESokobanPawn::RequestStep(ESokobanDir Dir)
 		return false;
 	}
 
-	// update occupancy for player
 	Board->UnregisterPlayerCell(GridCell);
 	GridCell = Step.NewPlayerCell;
 	Board->RegisterPlayerCell(GridCell);
@@ -134,7 +134,6 @@ bool AJuanIbargoitia_IUESokobanPawn::RequestStep(ESokobanDir Dir)
 		CachedGS->IncrementMoves();
 	}
 
-	// Setup crate movement visuals if pushed
 	MovingCrate = nullptr;
 	if (Step.bPushedCrate)
 	{

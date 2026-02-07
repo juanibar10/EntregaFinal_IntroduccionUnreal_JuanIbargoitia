@@ -52,7 +52,7 @@ void AJuanIbargoitia_IUESokobanPlayerController::SetupInputComponent()
 	}
 }
 
-ESokobanDir AJuanIbargoitia_IUESokobanPlayerController::AxisToDir(const FVector2D& Axis) const
+ESokobanDir AJuanIbargoitia_IUESokobanPlayerController::AxisToDir(const FVector2D& Axis)
 {
 	const float AbsX = FMath::Abs(Axis.X);
 	const float AbsY = FMath::Abs(Axis.Y);

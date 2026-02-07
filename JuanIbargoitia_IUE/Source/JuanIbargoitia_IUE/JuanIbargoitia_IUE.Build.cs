@@ -14,7 +14,6 @@ public class JuanIbargoitia_IUE : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-			"AIModule",
 			"NavigationSystem",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
@@ -27,21 +26,7 @@ public class JuanIbargoitia_IUE : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"JuanIbargoitia_IUE",
-			"JuanIbargoitia_IUE/Sokoban",
-			"JuanIbargoitia_IUE/Variant_Strategy",
-			"JuanIbargoitia_IUE/Variant_Strategy/UI",
-			"JuanIbargoitia_IUE/Variant_TwinStick",
-			"JuanIbargoitia_IUE/Variant_TwinStick/AI",
-			"JuanIbargoitia_IUE/Variant_TwinStick/Gameplay",
-			"JuanIbargoitia_IUE/Variant_TwinStick/UI"
+			"JuanIbargoitia_IUE/Sokoban"
 		});
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }

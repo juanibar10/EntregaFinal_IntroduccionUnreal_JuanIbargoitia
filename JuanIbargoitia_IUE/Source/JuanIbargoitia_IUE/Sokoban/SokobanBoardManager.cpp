@@ -31,19 +31,26 @@ void AJuanIbargoitia_IUESokobanBoardManager::Tick(float DeltaSeconds)
 		return;
 	}
 
+	const FVector DebugHalfExtents(TileSize * 0.5f, TileSize * 0.5f, 20.f);
+	const FVector DebugHalfExtentsGoal(TileSize * 0.45f, TileSize * 0.45f, 10.f);
+
+	const FVector DebugOffset = bDebugDrawAtCellCorners
+		? FVector(TileSize * 0.5f, TileSize * 0.5f, 0.f)
+		: FVector::ZeroVector;
+
 	for (const FIntPoint& Cell : WallCells)
 	{
-		DrawDebugBox(GetWorld(), CellToWorld(Cell), FVector(TileSize * 0.5f, TileSize * 0.5f, 20.f), FColor::Red, false, -1.f, 0, 1.f);
+		DrawDebugBox(GetWorld(), CellToWorld(Cell) + DebugOffset, DebugHalfExtents, FColor::Red, false, -1.f, 0, 1.f);
 	}
+
 	for (const FIntPoint& Cell : GoalCells)
 	{
-		DrawDebugBox(GetWorld(), CellToWorld(Cell), FVector(TileSize * 0.45f, TileSize * 0.45f, 10.f), FColor::Green, false, -1.f, 0, 1.f);
+		DrawDebugBox(GetWorld(), CellToWorld(Cell) + DebugOffset, DebugHalfExtentsGoal, FColor::Green, false, -1.f, 0, 1.f);
 	}
 }
 
 FVector AJuanIbargoitia_IUESokobanBoardManager::CellToWorld(const FIntPoint& Cell) const
 {
-	// Centro de celda (evita offsets de media casilla)
 	return Origin + FVector((Cell.X + 0.5f) * TileSize, (Cell.Y + 0.5f) * TileSize, 0.f);
 }
 
@@ -51,12 +58,12 @@ FIntPoint AJuanIbargoitia_IUESokobanBoardManager::WorldToCell(const FVector& Wor
 {
 	const FVector Local = World - Origin;
 
-	// Inversa del centrado: quitamos media celda antes de discretizar
 	const float CellX = (Local.X / TileSize) - 0.5f;
 	const float CellY = (Local.Y / TileSize) - 0.5f;
 
-	const int32 X = FMath::RoundToInt(CellX);
-	const int32 Y = FMath::RoundToInt(CellY);
+	const int32 X = FMath::FloorToInt(CellX);
+	const int32 Y = FMath::FloorToInt(CellY);
+
 	return FIntPoint(X, Y);
 }
 
@@ -69,11 +76,21 @@ void AJuanIbargoitia_IUESokobanBoardManager::ScanLevel()
 
 	for (TActorIterator<AJuanIbargoitia_IUESokobanWall> It(GetWorld()); It; ++It)
 	{
-		WallCells.Add(WorldToCell(It->GetActorLocation()));
+		const FIntPoint Cell = WorldToCell(It->GetActorLocation());
+		WallCells.Add(Cell);
+		if (bSnapActorsToGridOnBeginPlay)
+		{
+			It->SetActorLocation(CellToWorld(Cell));
+		}
 	}
 	for (TActorIterator<AJuanIbargoitia_IUESokobanGoal> It(GetWorld()); It; ++It)
 	{
-		GoalCells.Add(WorldToCell(It->GetActorLocation()));
+		const FIntPoint Cell = WorldToCell(It->GetActorLocation());
+		GoalCells.Add(Cell);
+		if (bSnapActorsToGridOnBeginPlay)
+		{
+			It->SetActorLocation(CellToWorld(Cell));
+		}
 	}
 	for (TActorIterator<AJuanIbargoitia_IUESokobanCrate> It(GetWorld()); It; ++It)
 	{
@@ -81,6 +98,11 @@ void AJuanIbargoitia_IUESokobanBoardManager::ScanLevel()
 		const FIntPoint Cell = WorldToCell(Crate->GetActorLocation());
 		Crate->GridCell = Cell;
 		CratesByCell.Add(Cell, Crate);
+
+		if (bSnapActorsToGridOnBeginPlay)
+		{
+			Crate->SetActorLocation(CellToWorld(Cell));
+		}
 	}
 
 	CachedGS = GetWorld() ? GetWorld()->GetGameState<AJuanIbargoitia_IUESokobanGameState>() : nullptr;
@@ -154,7 +176,6 @@ FSokobanStepResult AJuanIbargoitia_IUESokobanBoardManager::TryStep(const FIntPoi
 			return Result;
 		}
 
-		// move crate in occupancy map
 		CratesByCell.Remove(TargetCell);
 		CratesByCell.Add(BeyondCell, Crate);
 		Crate->GridCell = BeyondCell;
@@ -164,7 +185,6 @@ FSokobanStepResult AJuanIbargoitia_IUESokobanBoardManager::TryStep(const FIntPoi
 		Result.CrateToCell = BeyondCell;
 	}
 
-	// player can move into TargetCell now
 	Result.bSuccess = true;
 	Result.NewPlayerCell = TargetCell;
 
